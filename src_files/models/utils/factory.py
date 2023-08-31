@@ -42,9 +42,7 @@ def create_model(args):
     elif args.model_name == 'vit_base_patch16_224': # notice - qkv_bias==False currently
         model_kwargs = dict(
             patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=None, qkv_bias=False)
-        model = timm.models.vision_transformer._create_vision_transformer('vit_base_patch16_224_in21k',
-                                                                          pretrained=False,
-                                                                          num_classes=args.num_classes, **model_kwargs)
+        model = timm.models.vision_transformer._create_vision_transformer('vit_base_patch16_224_in21k',pretrained=False,num_classes=args.num_classes, **model_kwargs)
     elif args.model_name == 'mobilenetv3_large_100':
         model = timm.create_model('mobilenetv3_large_100', pretrained=False, num_classes=args.num_classes)
     else:
@@ -53,6 +51,6 @@ def create_model(args):
 
     if args.model_path and args.model_path!='':  # make sure to load pretrained ImageNet-1K model
         model = load_model_weights(model, args.model_path)
-    print('done\n')
+    print('finished creating model!')
 
     return model

@@ -12,7 +12,7 @@ import torch.nn.parallel
 import torch.optim
 import torch.utils.data.distributed
 from torch.optim import lr_scheduler
-
+import logging
 from src_files.data_loading.data_loader import create_data_loaders
 from src_files.helper_functions.distributed import print_at_master, to_ddp, num_distrib, setup_distrib
 from src_files.helper_functions.general_helper_functions import silence_PIL_warnings
@@ -40,6 +40,9 @@ parser.add_argument("--tree_path", default='./resources/imagenet21k_miil_tree.pt
 
 
 def main():
+    logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
     # arguments
     args = parser.parse_args()
 
@@ -48,6 +51,7 @@ def main():
 
     # setup distributed
     setup_distrib(args)
+    logging.info("finished setting up distributed params!")
 
     # Setup model
     model = create_model(args).cuda()
@@ -55,6 +59,7 @@ def main():
 
     # create optimizer
     optimizer = create_optimizer(model, args)
+    logging.info("finished creating optimizer")
 
     # Data loading
     train_loader, val_loader = create_data_loaders(args)
@@ -72,8 +77,7 @@ def train_21k(model, train_loader, val_loader, optimizer, semantic_softmax_proce
     loss_fn = SemanticSoftmaxLoss(semantic_softmax_processor)
 
     # set scheduler
-    scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_loader),
-                                        epochs=args.epochs, pct_start=0.1, cycle_momentum=False, div_factor=20)
+    scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_loader), epochs=args.epochs, pct_start=0.1, cycle_momentum=False, div_factor=20)
 
     # set scalaer
     scaler = GradScaler()
@@ -96,9 +100,7 @@ def train_21k(model, train_loader, val_loader, optimizer, semantic_softmax_proce
 
         epoch_time = time.time() - epoch_start_time
         print_at_master(
-            "\nFinished Epoch, Training Rate: {:.1f} [img/sec]".format(len(train_loader) *
-                                                                      args.batch_size / epoch_time * max(num_distrib(),
-                                                                                                         1)))
+            "\nFinished Epoch, Training Rate: {:.1f} [img/sec]".format(len(train_loader) * args.batch_size / epoch_time * max(num_distrib(),1)))
 
         # validation epoch
         validate_21k(val_loader, model, met)
