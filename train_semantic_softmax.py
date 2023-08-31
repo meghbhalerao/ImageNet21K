@@ -22,7 +22,7 @@ from src_files.optimizers.create_optimizer import create_optimizer
 from src_files.semantic.metrics import AccuracySemanticSoftmaxMet
 from src_files.semantic.semantic_loss import SemanticSoftmaxLoss
 from src_files.semantic.semantics import ImageNet21kSemanticSoftmax
-
+from tqdm import tqdm
 parser = argparse.ArgumentParser(description='PyTorch ImageNet21K Semantic Softmax Training')
 parser.add_argument('--data_path', type=str)
 parser.add_argument('--lr', default=3e-4, type=float)
@@ -41,7 +41,7 @@ parser.add_argument("--tree_path", default='./resources/imagenet21k_miil_tree.pt
 
 def main():
     logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()])
     # arguments
     args = parser.parse_args()
@@ -68,7 +68,7 @@ def main():
     semantic_softmax_processor = ImageNet21kSemanticSoftmax(args)
     semantic_met = AccuracySemanticSoftmaxMet(semantic_softmax_processor)
 
-    # Actuall Training
+    # Actual Training
     train_21k(model, train_loader, val_loader, optimizer, semantic_softmax_processor, semantic_met, args)
 
 
@@ -87,8 +87,10 @@ def train_21k(model, train_loader, val_loader, optimizer, semantic_softmax_proce
 
         # train epoch
         print_at_master("\nEpoch {}".format(epoch))
+        logging.info(f"length of train loader is {len(train_loader)}")
+        logging.info(f"length of val loader is {len(val_loader)}")
         epoch_start_time = time.time()
-        for i, (input, target) in enumerate(train_loader):
+        for i, (input, target) in tqdm(enumerate(train_loader)):
             with autocast():  # mixed precision
                 output = model(input)
                 loss = loss_fn(output, target) # note - loss also in fp16
